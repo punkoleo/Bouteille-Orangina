@@ -6,7 +6,6 @@ class Map extends ex.Scene {
    public _player: Monster;
    private _lootProgress: ex.UIActor;
    private _monsterProgress: ex.UIActor;
-   private _monsterSpecialProgress: ex.UIActor;
    private _vg: ex.UIActor;
    private _damageEffectTimeLeft: number = 0;
    private _takingDamage: boolean = false;
@@ -28,8 +27,7 @@ class Map extends ex.Scene {
       this._map.anchor.setTo(0, 0);
       this._map.addDrawing(Resources.TextureMap);
       this.add(this._map);
-      
-      // vignette
+       
       this._vg = new ex.UIActor(0, 0, game.getWidth(), game.getHeight());
       var blackVignette = Resources.TextureVignette.asSprite().clone();
       var redVignette = Resources.TextureVignette.asSprite().clone();
@@ -41,7 +39,6 @@ class Map extends ex.Scene {
       this._vg.setDrawing("black");
       
       this.add(this._vg);
- 
       this.buildWalls();
       
       // GUI
@@ -51,25 +48,10 @@ class Map extends ex.Scene {
       this._lootProgress.color = ex.Color.fromHex("#f25500");
       this.add(this._lootProgress);
       
-      var monsterProgressBack = new ex.UIActor(game.getWidth() - 66, 23, Config.MonsterProgressSize + 4, 40);
-      monsterProgressBack.anchor.setTo(1, 0);
-      monsterProgressBack.color = ex.Color.Black;
-      this.add(monsterProgressBack);
-      
       this._monsterProgress = new ex.UIActor(game.getWidth() - 66, 27, Config.MonsterProgressSize, 32);
       this._monsterProgress.anchor.setTo(1, 0);
       this._monsterProgress.color = ex.Color.fromHex("#ab2800");
       this.add(this._monsterProgress);
-      
-      var specialProgressBack = new ex.UIActor(game.getWidth() - 50, 46, Config.MonsterSpecialProgressSize + 4, 24);
-      specialProgressBack.anchor.setTo(1, 0);
-      specialProgressBack.color = ex.Color.Black;
-      this.add(specialProgressBack);
-      
-      this._monsterSpecialProgress = new ex.UIActor(game.getWidth() - 50, 50, Config.MonsterSpecialProgressSize, 16);
-      this._monsterSpecialProgress.anchor.setTo(1, 0);
-      this._monsterSpecialProgress.color = ex.Color.fromHex("#6b1191");
-      this.add(this._monsterSpecialProgress);
       
       var monsterIndicator = new ex.UIActor(game.getWidth() - 74, 10, 64, 64);
       monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
