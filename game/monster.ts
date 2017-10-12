@@ -61,12 +61,6 @@ class Monster extends ex.Actor {
       this._shiftIndicator = new ex.Actor(7, 70, 24, 24);
       this._shiftIndicator.addDrawing("shift", shiftAnimation);
       
-      var chargeSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterCharge, 3, 1, 96, 96);
-      var chargeAnim = chargeSpriteSheet.getAnimationForAll(engine, 100);
-      chargeAnim.loop = true;
-      chargeAnim.scale.setTo(2, 2);
-      this.addDrawing("charge", chargeAnim);      
-      
       var downSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterDown, 14, 1, 96, 96);
       var rightSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterRight, 14, 1, 96, 96);
       var upSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterUp, 14, 1, 96, 96);
@@ -203,9 +197,7 @@ class Monster extends ex.Actor {
          this.dx = dashVector.x;
          this.dy = dashVector.y;
          this.setDrawing("charge");
-         //this.currentDrawing.anchor = new ex.Point(.35, .35);
          this.rotation = this._rotation;
-         Resources.Fireball.play();
       }
    }
    
@@ -331,11 +323,10 @@ class Monster extends ex.Actor {
          }
          
          
-         // WASD
-         if(engine.input.keyboard.isHeld(ex.Input.Keys.W) || 
+         // Gestion des touches ZQSD.
+         if(engine.input.keyboard.isHeld(ex.Input.Keys.Z) || 
             engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
                if (!this._hasMoved) {
-                  Analytics.trackGameStart();
                   this._hasMoved = true;
                }
                if(!this._isAttacking){
@@ -347,7 +338,6 @@ class Monster extends ex.Actor {
          if(engine.input.keyboard.isHeld(ex.Input.Keys.S) ||
             engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
                if (!this._hasMoved) {
-                  Analytics.trackGameStart();
                   this._hasMoved = true;
                }
                if(!this._isAttacking) {
@@ -356,10 +346,9 @@ class Monster extends ex.Actor {
                }
          }
          
-         if(engine.input.keyboard.isHeld(ex.Input.Keys.A) ||
+         if(engine.input.keyboard.isHeld(ex.Input.Keys.Q) ||
             engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
             if (!this._hasMoved) {
-               Analytics.trackGameStart();
                this._hasMoved = true;
             }
             if(!this._isAttacking) {
@@ -373,7 +362,6 @@ class Monster extends ex.Actor {
          if((engine.input.keyboard.isHeld(ex.Input.Keys.D) ||
             engine.input.keyboard.isHeld(ex.Input.Keys.Right))) {
             if (!this._hasMoved) {
-               Analytics.trackGameStart();
                this._hasMoved = true;
             }
             if(!this._isAttacking) {
@@ -387,8 +375,7 @@ class Monster extends ex.Actor {
          if(this.dx == 0 && this.dy == 0 && !this._isAttacking){
             this.setDrawing("idleDown");
          }
-   
-         
+
          if(this._isAttacking) {
             if(this._rotation < Math.PI/4 || this._rotation > Math.PI * (7/4)) {
                this.setDrawing("attackRight");
@@ -412,9 +399,7 @@ class Monster extends ex.Actor {
             }
          }      
       }
-      
-      
-      
+
       this.setZIndex(this.y);
    }
    
@@ -457,7 +442,6 @@ class Monster extends ex.Actor {
    private _attack() {
       var hitHero = false;
       _.forIn(this._attackable, (hero: Hero) => {
-         // hero.blink(500, 500, 5); //can't because moving already (no parallel actions support)
          game.currentScene.camera.shake(5, 5, 200);
          hero.Health--;
          hitHero = true;
@@ -476,7 +460,6 @@ class Monster extends ex.Actor {
   
    public debugDraw(ctx: CanvasRenderingContext2D): void {
       super.debugDraw(ctx);
-      // Debugging draw for attack rays
       _.forIn(this._rays, (ray: ex.Ray) => {
          ctx.beginPath();
          ctx.moveTo(ray.pos.x, ray.pos.y);

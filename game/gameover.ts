@@ -67,18 +67,12 @@ class GameOver extends ex.Scene {
          Stats.damageTaken = 0;
          
          map.resetPlayer(); 
-
-         _.forEach(map.getTreasures(), (treasure) => {
-            treasure.reset();
-         });
          
          HeroSpawner.reset();
          for (var i = HeroSpawner.getHeroes().length-1; i >= 0 ; i--) {
             HeroSpawner.despawn(HeroSpawner.getHeroes()[i]);
          }
-         HeroSpawner.cleanupTombstones();
-         
-         Analytics.trackGameRestart();
+         HeroSpawner.cleanupTombstones(); 
          
          game.goToScene('map');
       });
@@ -100,7 +94,6 @@ class GameOver extends ex.Scene {
       
       this._labelHeroesKilled.text = Stats.numHeroesKilled.toString() + ' (' + Math.floor(100 * (Stats.numHeroesKilled / HeroSpawner.getSpawnCount())).toString() + '%)';
       this._labelHeroesEscaped.text = Stats.numHeroesEscaped.toString() + ' (' + Math.floor(100 * (Stats.numHeroesEscaped / HeroSpawner.getSpawnCount())).toString() + '%)';
-      this._labelGoldLost.text = Math.floor(100 * (Stats.goldLost / map.getHoardAmount())).toString() + '%';
       this._labelDamageTaken.text = Math.floor(100 * (Stats.damageTaken / Config.MonsterHealth)).toString() + '%';
       var survival = map.getSurvivalTime(); // in ms
       var mins = Math.floor(survival / 1000 / 60);
@@ -112,6 +105,5 @@ class GameOver extends ex.Scene {
    public setType(type: GameOverType): void {
       this._type.setDrawing(type === GameOverType.Hoard ? "hoard" : "slain");
       Stats.gameOverType = type;
-      Analytics.trackGameOver();
    }
 }

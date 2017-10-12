@@ -1,11 +1,9 @@
 class Map extends ex.Scene {
    public static CellSize = 24;
    public static MapSize = 40;
-   
-   private _treasures: Treasure[];
-   private _map: ex.Actor; // todo TileMap
+    
+   private _map: ex.Actor;
    public _player: Monster;
-   private _treasureProgress: ex.UIActor;
    private _lootProgress: ex.UIActor;
    private _monsterProgress: ex.UIActor;
    private _monsterSpecialProgress: ex.UIActor;
@@ -16,8 +14,6 @@ class Map extends ex.Scene {
    
    constructor(engine: ex.Engine) {
       super(engine);
-      
-      this._treasures = [];
    }
    
    public damageEffect(): void {
@@ -48,25 +44,12 @@ class Map extends ex.Scene {
  
       this.buildWalls();
       
-      // show GUI
-      var progressBack = new ex.UIActor(60, 23, Config.TreasureProgressSize + 4, 40);
-      progressBack.anchor.setTo(0, 0);
-      progressBack.color = ex.Color.Black;
-      this.add(progressBack);
-      
-      this._treasureProgress = new ex.UIActor(60, 27, Config.TreasureProgressSize, 32);
-      this._treasureProgress.anchor.setTo(0, 0);
-      this._treasureProgress.color = ex.Color.fromHex("#eab600");
-      this.add(this._treasureProgress);
+      // GUI
       
       this._lootProgress = new ex.UIActor(60, 27, 0, 32);
       this._lootProgress.anchor.setTo(0, 0);
       this._lootProgress.color = ex.Color.fromHex("#f25500");
       this.add(this._lootProgress);
-      
-      var treasureIndicator = new ex.UIActor(10, 10, 64, 64);
-      treasureIndicator.addDrawing(Resources.TextureTreasureIndicator);
-      this.add(treasureIndicator);
       
       var monsterProgressBack = new ex.UIActor(game.getWidth() - 66, 23, Config.MonsterProgressSize + 4, 40);
       monsterProgressBack.anchor.setTo(1, 0);
@@ -91,23 +74,7 @@ class Map extends ex.Scene {
       var monsterIndicator = new ex.UIActor(game.getWidth() - 74, 10, 64, 64);
       monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
       this.add(monsterIndicator);
-           
-      
-      //
-      // todo load from Tiled
-      //     
-      var treasures = [
-         this.getCellPos(19, 2),
-         this.getCellPos(20, 2),
-         this.getCellPos(19, 37),
-         this.getCellPos(20, 37)
-      ];
-      
-      for (var i = 0; i < treasures.length; i++) {
-         var treasure = new Treasure(treasures[i].x, treasures[i].y);
-         this.addTreasure(treasure);
-      }
-      
+         
       var playerSpawn = this.getCellPos(Config.PlayerCellSpawnX, Config.PlayerCellSpawnY);
       this._player = new Monster(playerSpawn.x, playerSpawn.y);
       
@@ -115,9 +82,7 @@ class Map extends ex.Scene {
    }
    
    public onActivate() {
-      // start sounds
-      SoundManager.start();           
-      
+      SoundManager.start();    
       this._survivalTimer = 0;
    }
    
@@ -135,14 +100,8 @@ class Map extends ex.Scene {
       this._player.x = playerSpawn.x;
       this._player.y = playerSpawn.y;
    }
-   
-   public getTreasures(): Treasure[] {
-      return this._treasures;
-   }
-   
-   public getSpawnPoints(): ex.Point[] {
-      // todo get from tiled
-      
+    
+   public getSpawnPoints(): ex.Point[] {      
       return [
          this.getCellPos(0, 19),
          this.getCellPos(39, 19)
@@ -150,7 +109,6 @@ class Map extends ex.Scene {
    }
    
    public buildWalls() {
-      
       var x, y, cell, wall: ex.Actor;
       for (x = 0; x < Map.MapSize; x++) {
          for (y = 0; y < Map.MapSize; y++) {
@@ -171,9 +129,8 @@ class Map extends ex.Scene {
    
    public isWall(x: number, y: number) {
       var cellX = Math.floor(x / Map.CellSize)
-      var cellY = Math.floor(y / Map.CellSize);
+      var cellY = Math.floor(y / Map.CellSize); 
       
-      // oob
       if (cellX < 0 || cellX > Map.MapSize || cellY < 0 || cellY > Map.MapSize) return true;
       
       return this._walls[cellX + cellY * Map.MapSize] !== 0;
@@ -202,36 +159,13 @@ class Map extends ex.Scene {
          }
       }
       
-      // update treasure indicator
-      var total = this.getHoardAmount();
-      var looting = _.sum(HeroSpawner.getHeroes(), x => x.getLootAmount());
-      var curr = _.sum(this._treasures, (x) => x.getAmount());
-      
-      // % being looted right now
-      var lootProgress = looting / total;
-      
-      // % level of hoard, if looting succeeds
-      var lossProgress = curr / total;
-      
-      var progressWidth = Math.floor(lossProgress * Config.TreasureProgressSize);
-      var lootWidth = Math.floor(lootProgress * Config.TreasureProgressSize);
-      
-      this._treasureProgress.setWidth(progressWidth);
-      this._lootProgress.x = this._treasureProgress.getRight();
-      this._lootProgress.setWidth(lootWidth);
-      
       // update monster health bar
       var monsterHealth = this._player.health;
       var progress = monsterHealth / Config.MonsterHealth;
       
       this._monsterProgress.setWidth(Math.floor(progress * Config.MonsterProgressSize));
-      // todo set special
       this._monsterSpecialProgress.setWidth((this._player.dashLevel/ Config.MonsterDashCooldown) * Config.MonsterSpecialProgressSize);
             
-      if ((curr + looting) <= 0) {
-         this._gameOver(GameOverType.Hoard);
-      }
-
       var focus = game.currentScene.camera.getFocus().toVector();
       var position = new ex.Vector(this._player.x, this._player.y);
       var stretch = position.minus(focus).scale(Config.CameraElasticity);
@@ -242,23 +176,10 @@ class Map extends ex.Scene {
       game.currentScene.camera.setFocus(focus.x, focus.y);
    }
    
-   private addTreasure(t: Treasure) {
-      this._treasures.push(t);
-      this.add(t);
-   }   
-   
-   public getHoardAmount() {
-      return this._treasures.length * Config.TreasureHoardSize;
-   }
-   
    public _gameOver(type: GameOverType) {
       isGameOver = true;      
       game.goToScene('gameover');
       gameOver.setType(type);      
    }
-   
-   
-   
-   // exported from Tiled JSON
    private _walls: number[] = [179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 292, 293, 293, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 509, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 509, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 291, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 291, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 185, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 739, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1131, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 739, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1131, 183, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 291, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 509, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 291, 179, 179, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 295, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 296, 179, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 179, 300, 179, 179, 179, 179, 298, 299, 179, 179, 179, 188, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 189, 179, 179, 179, 179, 179, 179, 179, 179, 179];
 }
