@@ -14,12 +14,10 @@ class HeroSpawner {
    public static spawnHero() {
       var i, spawnPoints, spawnPoint, hero;           
       
-      // todo better spawning logic
       for (i = 0; i < Math.min(Config.HeroSpawnPoolMax, HeroSpawner._spawned); i++) {
          spawnPoints = map.getSpawnPoints();
          spawnPoint = Util.pickRandom(spawnPoints);
          
-         // increasing difficulty
          if (Stats.numHeroesKilled > Config.HardThreshold) {
             heroTimer.interval = Config.HeroSpawnIntervalHard;
          } else if (Stats.numHeroesKilled > Config.MedThreshold) {
@@ -31,7 +29,6 @@ class HeroSpawner {
          HeroSpawner._spawned++;
       }
       
-      // rig first spawn
       if (HeroSpawner._spawned === 0) {
          spawnPoint = map.getSpawnPoints()[0];
          HeroSpawner._spawn(spawnPoint);
@@ -50,7 +47,6 @@ class HeroSpawner {
    }
 
    public static despawn(h: Hero) { 
-      
       h.kill();
       _.remove(this._heroes, h);
    }
@@ -74,8 +70,6 @@ class Hero extends ex.Actor {
    public Health: number = Config.HeroHealth;
    
    private _lootIndicator: ex.Actor;
-   private _treasure: number = 0;
-   private _chestLooted: Treasure;
    private _fsm: TypeState.FiniteStateMachine<HeroStates>;
    private _attackCooldown: number = Config.HeroAttackCooldown;
    private _hasHitMinotaur: boolean = true; 
@@ -91,7 +85,6 @@ class Hero extends ex.Actor {
             
       this._fsm = new TypeState.FiniteStateMachine<HeroStates>(HeroStates.Searching);
       
-      // declare valid state transitions
       this._fsm.from(HeroStates.Searching).to(HeroStates.Attacking, HeroStates.Looting);
       this._fsm.from(HeroStates.Attacking).to(HeroStates.Searching);
       this._fsm.from(HeroStates.Looting).to(HeroStates.Fleeing);
@@ -99,9 +92,7 @@ class Hero extends ex.Actor {
       this._fsm.from(HeroStates.Stunned).toAny(HeroStates);
       
       this._fsm.on(HeroStates.Stunned, this.onStunned.bind(this));
-      this._fsm.onExit(HeroStates.Stunned, this.onExitStunned.bind(this));
-      this._fsm.on(HeroStates.Searching, this.onSearching.bind(this)); 
-      this._fsm.on(HeroStates.Looting, this.onLooting.bind(this));     
+      this._fsm.onExit(HeroStates.Stunned, this.onExitStunned.bind(this));    
       this._fsm.on(HeroStates.Fleeing, this.onFleeing.bind(this));
       this._fsm.on(HeroStates.Attacking, this.onAttacking.bind(this));
    }
@@ -152,29 +143,11 @@ class Hero extends ex.Actor {
       this.collisionType = ex.CollisionType.Passive;
       
       this.on('collision', (e?: ex.CollisionEvent) => {
-         if (e.other instanceof Treasure) {
-            var hero = <Hero>e.actor;
-            if (hero._treasure === 0) {
-               hero._treasure = (<Treasure>e.other).steal();
-               if (hero._treasure === 0) {
-                  hero._fsm.go(HeroStates.Searching);
-               } else if (hero._fsm.canGo(HeroStates.Looting)) {
-                  hero._fsm.go(HeroStates.Looting);
-                  // var logger = ex.Logger.getInstance(); 
-                  // logger.info('gold stolen: ' + hero._treasure);
-                  // logger.info('current hoard: ' + map.getHoardAmount());
-               }
-               
-            }
-         } else if (e.other instanceof Monster) {
+         if (e.other instanceof Monster) {
             var hero = <Hero>e.actor;
             
             if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
-               Resources.HeroSwing.play();
                var monster = <Monster>e.other;
-               if (!monster.isDashing()) {
-                  monster.health--;
-               }
                map.damageEffect();
                
                Stats.damageTaken++;
@@ -192,18 +165,14 @@ class Hero extends ex.Actor {
                var origin = new ex.Vector(hero.x, hero.y);
                var dest = new ex.Vector(monster.x, monster.y);
                var a = dest.subtract(origin).toAngle(); 
-            } 
-            
-                      
+            }  
+               
             if (!hero._hasHitMinotaur) {
                hero._hasHitMinotaur = true;
                hero._attackCooldown = Config.HeroAttackCooldown;
             }
          }
-      });
-     
-      this.onSearching();
-
+      });  
    }
    
    public update(engine: ex.Engine, delta: number) {
@@ -211,10 +180,6 @@ class Hero extends ex.Actor {
       
       if (this.Health <= 0) { 
             Stats.numHeroesKilled++;
-            // map.getTreasures()[0].return(this._treasure);
-            this._chestLooted.return(this._treasure);
-            // return the treasure stolen to a random chest to preven player camping
-            // Util.pickRandom(map.getTreasures()).return(this._treasure);
             HeroSpawner.despawn(this);
       }
       this.setZIndex(this.y);
@@ -245,9 +210,7 @@ class Hero extends ex.Actor {
             this.setDrawing("damageRight");
          }
       }
-      
-      
-      
+
       if(this._isAttacking) {
          this._timeLeftAttacking -= delta;
          if(this._timeLeftAttacking <= 0) {
@@ -263,27 +226,17 @@ class Hero extends ex.Actor {
       
       switch (this._fsm.currentState) {
          case HeroStates.Stunned:
-            this._stunnedTime -= delta;
-            if(this._stunnedTime <= 0){
-               if(this._treasure > 0){
-                  this._fsm.go(HeroStates.Fleeing);
-               }else{
-                  this._fsm.go(HeroStates.Searching);   
-               }
-               
-            }
+            this._stunnedTime -= delta; 
          break;
          case HeroStates.Searching:
             if (heroVector.distance(monsterVector) <= Config.HeroAggroDistance) {
                this._fsm.go(HeroStates.Attacking);
-               // console.log('switching to attack');
             }
          break;
          case HeroStates.Attacking:
             if (heroVector.distance(monsterVector) > Config.HeroAggroDistance) {
                this.clearActions();
                this._fsm.go(HeroStates.Searching);
-               // console.log('stopping attack');
             } else if (heroVector.distance(monsterVector) <= Config.HeroAggroDistance) {
                this.clearActions();
                this.meet(map._player, Config.HeroSpeed); 
@@ -293,18 +246,8 @@ class Hero extends ex.Actor {
             }
          break;
       }
-
-      if (this._treasure > 0) {
-         this.add(this._lootIndicator);
-      } else {
-         this.remove(this._lootIndicator);
-      }
    }
 
-   public getLootAmount(): number {
-      return this._treasure;
-   }
-   
    public getLines() {
       var lines = new Array<ex.Line>();
 
@@ -338,7 +281,6 @@ class Hero extends ex.Actor {
       })
       
       return lines;
-
    }
    
    public debugDraw(ctx: CanvasRenderingContext2D): void{
@@ -355,30 +297,7 @@ class Hero extends ex.Actor {
       this.dy = dir.y;
    }
    
-   private onSearching(from?: HeroStates) {
-      
-      if (from != null && from === HeroStates.Searching) {
-         return;
-      }
-       // find treasures
-      var treasures = map.getTreasures();
-      
-      // random treasure for now
-      var loot =  Util.pickRandom(treasures);
-      
-      // move to it
-      this.moveTo(loot.x, loot.y, Config.HeroSpeed);
-      this._chestLooted = loot;
-   }
-   
-   private onLooting(from?: HeroStates) {
-      // play animation
-      this.delay(2000).callMethod(() => this._fsm.go(HeroStates.Fleeing));
-   }
-   
    private onFleeing(from?: HeroStates) {
-      
-      // find an exit
       var exits = map.getSpawnPoints();
       var exit = Util.pickRandom(exits);
       
@@ -386,11 +305,7 @@ class Hero extends ex.Actor {
    }
    
    private onAttacking(from?: HeroStates) {
-      
-      // stop any actions
       this.clearActions();
-      
-      // TODO attack monster
       this.meet(map._player, Config.HeroSpeed);
    }
    
@@ -409,9 +324,7 @@ class Hero extends ex.Actor {
       return true;
    }
    
-   private onExit() {     
-      // play negative sound or something
-      Stats.goldLost += this._treasure;
+   private onExit() {
       Stats.numHeroesEscaped++;
       HeroSpawner.despawn(this);
    }

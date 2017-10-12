@@ -1,11 +1,9 @@
 /// <reference path="config.ts" />
-/// <reference path="analytics.ts" />
 /// <reference path="resources.ts" />
 /// <reference path="util.ts" />
 /// <reference path="map.ts" />
 /// <reference path="monster.ts" />
 /// <reference path="hero.ts" />
-/// <reference path="treasure.ts" />
 /// <reference path="stats.ts" />
 /// <reference path="options.ts" />
 /// <reference path="gameover.ts" />
@@ -21,7 +19,7 @@ game.setAntialiasing(false);
 game.canvas.oncontextmenu = function(e){
    e.preventDefault();
    return false;
-};
+}; 
 
 var loader = new ex.Loader();
  

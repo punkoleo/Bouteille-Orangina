@@ -17,10 +17,8 @@ var Config = {
     MonsterHeight: 48,
     MonsterSpeed: 200,
     MonsterWalkFrameSpeed: 100,
+
     MonsterAttackRange: 100,
-    MonsterDashSpeed: 1,
-    MonsterDashDuration: 1,
-    MonsterDashCooldown: 100000000,
     CloseMonsterAttackRange: 10,
     MonsterProgressSize: 200,
     MonsterSpecialProgressSize: 125,
@@ -33,116 +31,25 @@ var Config = {
     CameraFriction: 0.5,
     CameraShake: 0,
     CameraShakeDuration: 0,
-    // Spawn interval
     HeroSpawnInterval: 10000,
     HeroSpawnIntervalEasy: 7500,
     HeroSpawnIntervalMed: 6000,
     HeroSpawnIntervalHard: 4000,
-    // the thresholds where we decrease the spawn interval
     EasyThreshold: 10,
     MedThreshold: 20,
     HardThreshold: 30,
-    // Max heroes to spawn at once
     HeroSpawnPoolMax: 5,
-    // How much health a hero has
     HeroHealth: 3,
-    // Hero speed (in px/s)
     HeroSpeed: 100,
-    // Hero with loot speed (in px/s)
     HeroFleeingSpeed: 80,
-    // The cooldown amount for a hero's attack
     HeroAttackCooldown: 1500,
-    // The maximum distance a hero will aggro to the monster
     HeroAggroDistance: 1500,
     HeroMeleeRange: 30,
-    HeroStunnedTime: 100,
-    // Amount of gold heroes can carry
-    TreasureStealAmount: 0,
-    // Amount of gold in each treasure stash
-    TreasureHoardSize: 50,
-    // Treasure progress indicator width (in px)
-    TreasureProgressSize:1
+    HeroStunnedTime: 100
 };
-var Analytics = /** @class */ (function () {
-    function Analytics() {
-    }
-    Analytics.trackGameOver = function () {
-        var survivalTime = map.getSurvivalTime() / 1000; // seconds;
-        Analytics._trackEvent('GameOver', {
-            SurvivalTime: survivalTime,
-            HeroesKilled: Stats.numHeroesKilled,
-            HeroesEscaped: Stats.numHeroesEscaped,
-            TotalHeroes: HeroSpawner.getSpawnCount(),
-            GoldLost: Stats.goldLost / map.getHoardAmount(),
-            TotalGold: map.getHoardAmount(),
-            DamageTaken: Stats.damageTaken / Config.MonsterHealth
-        }, {
-            GameOverType: GameOverType[Stats.gameOverType],
-            MusicEnabled: Options.music,
-            SoundEnabled: Options.sound
-        });
-        Analytics._trackTiming('Survival (in s)', survivalTime);
-    };
-    Analytics.trackGameStart = function () {
-        Analytics._trackEvent('GameStart');
-    };
-    Analytics.trackGameRestart = function () {
-        Analytics._trackEvent('GameRestart');
-    };
-    Analytics._trackTiming = function (name, value) {
-        try {
-            var ga = window.ga;
-            ga && ga('send', 'timing', 'Bomberman Orangina Ynov', name, value);
-        }
-        catch (ex) {
-            ex.Logger.getInstance().error("Error while sending Google analytics timing", ex);
-        }
-        try {
-            var ai = window.appInsights;
-            ai && ai.trackMetric(name, value);
-        }
-        catch (ex) {
-            ex.Logger.getInstance().error("Error while sending App Insights timing", ex);
-        }
-    };
-    Analytics._trackEvent = function (name, stats, strings) {
-        if (stats === void 0) { stats = null; }
-        if (strings === void 0) { strings = null; }
-        try {
-            var ga = window.ga;
-            // google
-            if (ga) {
-                ga('send', {
-                    hitType: 'event',
-                    eventCategory: 'Ludum 33 Stats',
-                    eventAction: name
-                });
-            }
-        }
-        catch (ex) {
-            ex.Logger.getInstance().error("Error while sending Google analytics", ex);
-        }
-        try {
-            var ai = window.appInsights;
-            // appinsights
-            if (ai && strings && stats) {
-                ai.trackEvent(name, strings, stats);
-            }
-            else if (ai) {
-                ai.trackEvent(name);
-            }
-        }
-        catch (ex) {
-            ex.Logger.getInstance().error("Error while sending App Insights analytics", ex);
-        }
-    };
-    return Analytics;
-}());
 var Resources = {
-    HeroSwing: new ex.Sound('sounds/hero-swing.mp3', 'sounds/hero-swing.wav'),
-    Fireball: new ex.Sound('sounds/fireball.mp3', 'sounds/fireball.wav'),
-    SoundMusic: new ex.Sound('sounds/music.mp3', 'sounds/music.mp3'),
-    GameOver: new ex.Sound('sounds/MarioLoose.mp3', 'sounds/MarioLoose.mp3'),
+    SoundMusic: new ex.Sound('sounds/music.mp3', 'sounds/music.wav'),
+    GameOver: new ex.Sound('sounds/fail.mp3', 'sounds/fail.wav'),
     TextureShift: new ex.Texture("images/shift.png"),
     TextureVignette: new ex.Texture("images/vignette.png"),
     //TextureHero: new ex.Texture("images/hero.png"),
@@ -154,17 +61,9 @@ var Resources = {
     TextureMonsterAim: new ex.Texture("images/aiming.png"),
     TextureMonsterCharge: new ex.Texture("images/fireball.png"),
 
-
-    /*
-    TextureMonsterDown: new ex.Texture("images/minotaurv2.png"),
-    TextureMonsterRight: new ex.Texture("images/minotaurv2right.png"),
-    TextureMonsterUp: new ex.Texture("images/minotaurv2back.png"),
-    TextureMonsterAim: new ex.Texture("images/aiming.png"),
     TextureMonsterCharge: new ex.Texture("images/fireball.png"),
-    */
     TextureTreasure: new ex.Texture("images/treasure.png"),
     TextureTreasureEmpty: new ex.Texture("images/treasure-empty.png"),
-    //TextureTreasureIndicator: new ex.Texture("images/treasure-indicator.png"),
     TextureMonsterIndicator: new ex.Texture("images/mino-indicator.png"),
     TextureMap: new ex.Texture("images/map.png"),
     TextureWall: new ex.Texture("images/wall.png"),
@@ -193,9 +92,7 @@ var Map = /** @class */ (function (_super) {
         _this._takingDamage = false;
         _this._survivalTimer = 0;
         _this._cameraVel = new ex.Vector(0, 0);
-        // exported from Tiled JSON
         _this._walls = [179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 292, 293, 293, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 509, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 179, 179, 179, 509, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 291, 179, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 179, 179, 179, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 291, 186, 189, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 188, 187, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 185, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 185, 739, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1131, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 739, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1131, 183, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 184, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 291, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 509, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 291, 179, 179, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 295, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 296, 179, 179, 179, 179, 179, 179, 179, 179, 188, 187, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 186, 189, 179, 179, 179, 179, 179, 179, 179, 300, 179, 179, 179, 179, 298, 299, 179, 179, 179, 188, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 181, 189, 179, 179, 179, 179, 179, 179, 179, 179, 179];
-        _this._treasures = [];
         return _this;
     }
     Map.prototype.damageEffect = function () {
@@ -220,22 +117,11 @@ var Map = /** @class */ (function (_super) {
         this._vg.setDrawing("black");
         this.add(this._vg);
         this.buildWalls();
-        // show GUI
-        var progressBack = new ex.UIActor(60, 23, Config.TreasureProgressSize + 4, 40);
-        progressBack.anchor.setTo(0, 0);
-        progressBack.color = ex.Color.Black;
-        this.add(progressBack);
-        this._treasureProgress = new ex.UIActor(60, 27, Config.TreasureProgressSize, 32);
-        this._treasureProgress.anchor.setTo(0, 0);
-        this._treasureProgress.color = ex.Color.fromHex("#eab600");
-        this.add(this._treasureProgress);
+        // GUI
         this._lootProgress = new ex.UIActor(60, 27, 0, 32);
         this._lootProgress.anchor.setTo(0, 0);
         this._lootProgress.color = ex.Color.fromHex("#f25500");
         this.add(this._lootProgress);
-        var treasureIndicator = new ex.UIActor(10, 10, 64, 64);
-        treasureIndicator.addDrawing(Resources.TextureTreasureIndicator);
-        this.add(treasureIndicator);
         var monsterProgressBack = new ex.UIActor(game.getWidth() - 66, 23, Config.MonsterProgressSize + 4, 40);
         monsterProgressBack.anchor.setTo(1, 0);
         monsterProgressBack.color = ex.Color.Black;
@@ -256,23 +142,11 @@ var Map = /** @class */ (function (_super) {
         monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
         this.add(monsterIndicator);
 
-
-        var treasures = [
-            this.getCellPos(19, 2),
-            this.getCellPos(20, 2),
-            this.getCellPos(19, 37),
-            this.getCellPos(20, 37)
-        ];
-        for (var i = 0; i < treasures.length; i++) {
-            var treasure = new Treasure(treasures[i].x, treasures[i].y);
-            this.addTreasure(treasure);
-        }
         var playerSpawn = this.getCellPos(Config.PlayerCellSpawnX, Config.PlayerCellSpawnY);
         this._player = new Monster(playerSpawn.x, playerSpawn.y);
         this.add(this._player);
     };
     Map.prototype.onActivate = function () {
-        // start sounds
         SoundManager.start();
         this._survivalTimer = 0;
     };
@@ -288,11 +162,7 @@ var Map = /** @class */ (function (_super) {
         this._player.x = playerSpawn.x;
         this._player.y = playerSpawn.y;
     };
-    Map.prototype.getTreasures = function () {
-        return this._treasures;
-    };
     Map.prototype.getSpawnPoints = function () {
-        // todo get from tiled
         return [
             this.getCellPos(0, 19),
             this.getCellPos(39, 19)
@@ -317,7 +187,6 @@ var Map = /** @class */ (function (_super) {
     Map.prototype.isWall = function (x, y) {
         var cellX = Math.floor(x / Map.CellSize);
         var cellY = Math.floor(y / Map.CellSize);
-        // oob
         if (cellX < 0 || cellX > Map.MapSize || cellY < 0 || cellY > Map.MapSize)
             return true;
         return this._walls[cellX + cellY * Map.MapSize] !== 0;
@@ -338,28 +207,10 @@ var Map = /** @class */ (function (_super) {
                 this._vg.setDrawing("black");
             }
         }
-        // update treasure indicator
-        var total = this.getHoardAmount();
-        var looting = _.sum(HeroSpawner.getHeroes(), function (x) { return x.getLootAmount(); });
-        var curr = _.sum(this._treasures, function (x) { return x.getAmount(); });
-        // % being looted right now
-        var lootProgress = looting / total;
-        // % level of hoard, if looting succeeds
-        var lossProgress = curr / total;
-        var progressWidth = Math.floor(lossProgress * Config.TreasureProgressSize);
-        var lootWidth = Math.floor(lootProgress * Config.TreasureProgressSize);
-        this._treasureProgress.setWidth(progressWidth);
-        this._lootProgress.x = this._treasureProgress.getRight();
-        this._lootProgress.setWidth(lootWidth);
         // update monster health bar
         var monsterHealth = this._player.health;
         var progress = monsterHealth / Config.MonsterHealth;
         this._monsterProgress.setWidth(Math.floor(progress * Config.MonsterProgressSize));
-        // todo set special
-        this._monsterSpecialProgress.setWidth((this._player.dashLevel / Config.MonsterDashCooldown) * Config.MonsterSpecialProgressSize);
-        if ((curr + looting) <= 0) {
-            this._gameOver(GameOverType.Hoard);
-        }
         var focus = game.currentScene.camera.getFocus().toVector();
         var position = new ex.Vector(this._player.x, this._player.y);
         var stretch = position.minus(focus).scale(Config.CameraElasticity);
@@ -368,13 +219,6 @@ var Map = /** @class */ (function (_super) {
         this._cameraVel = this._cameraVel.plus(friction);
         focus = focus.plus(this._cameraVel);
         game.currentScene.camera.setFocus(focus.x, focus.y);
-    };
-    Map.prototype.addTreasure = function (t) {
-        this._treasures.push(t);
-        this.add(t);
-    };
-    Map.prototype.getHoardAmount = function () {
-        return this._treasures.length * Config.TreasureHoardSize;
     };
     Map.prototype._gameOver = function (type) {
         isGameOver = true;
@@ -398,10 +242,6 @@ var Monster = /** @class */ (function (_super) {
         _this._timeLeftAttacking = 0;
         _this._direction = "none";
         _this._lastSwing = 0;
-        _this._timeLeftDashing = 0;
-        _this._isDashing = false;
-        _this._canDash = false;
-        _this.dashLevel = 0;
         _this.color = ex.Color.Red;
         _this._mouseX = 0;
         _this._mouseY = 0;
@@ -432,11 +272,6 @@ var Monster = /** @class */ (function (_super) {
         shiftAnimation.scale.setTo(1, 1);
         this._shiftIndicator = new ex.Actor(7, 70, 24, 24);
         this._shiftIndicator.addDrawing("shift", shiftAnimation);
-        var chargeSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterCharge, 3, 1, 96, 96);
-        var chargeAnim = chargeSpriteSheet.getAnimationForAll(engine, 100);
-        chargeAnim.loop = true;
-        chargeAnim.scale.setTo(2, 2);
-        this.addDrawing("charge", chargeAnim);
         var downSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterDown, 14, 1, 96, 96);
         var rightSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterRight, 14, 1, 96, 96);
         var upSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterUp, 14, 1, 96, 96);
@@ -522,12 +357,6 @@ var Monster = /** @class */ (function (_super) {
                 that._lastSwing = currentTime;
             }
         });
-        // keyboad
-        engine.input.keyboard.on("down", function (evt) {
-            if (evt.key === ex.Input.Keys.Shift) {
-                that.dash();
-            }
-        });
     };
     Monster.prototype._findFirstValidPad = function (engine) {
         var gamePad;
@@ -536,25 +365,6 @@ var Monster = /** @class */ (function (_super) {
             if (gamePad && gamePad._buttons && gamePad._buttons.length > 0) {
                 return gamePad;
             }
-        }
-    };
-    Monster.prototype.isDashing = function () {
-        return this._isDashing;
-    };
-    Monster.prototype.dash = function () {
-        if (this._canDash) {
-            this.remove(this._shiftIndicator);
-            this._canDash = false;
-            this.dashLevel = 0;
-            var dashVector = ex.Vector.fromAngle(this._rotation).scale(Config.MonsterDashSpeed);
-            this._isDashing = true;
-            this._timeLeftDashing = Config.MonsterDashDuration;
-            this.dx = dashVector.x;
-            this.dy = dashVector.y;
-            this.setDrawing("charge");
-            //this.currentDrawing.anchor = new ex.Point(.35, .35);
-            this.rotation = this._rotation;
-            Resources.Fireball.play();
         }
     };
     Monster.prototype.update = function (engine, delta) {
@@ -577,14 +387,6 @@ var Monster = /** @class */ (function (_super) {
         }
         this._attackable.length = 0;
         this._detectAttackable();
-        if (this._isDashing) {
-            this._attack();
-            this._timeLeftDashing -= delta;
-            if (this._timeLeftDashing <= 0) {
-                this._isDashing = false;
-                this.rotation = 0;
-            }
-        }
         var prevRotation = this._rotation;
         this._rotation = ex.Util.canonicalizeAngle(new ex.Vector(this._mouseX - this.x, this._mouseY - this.y).toAngle());
         // updating attack rays
@@ -598,135 +400,122 @@ var Monster = /** @class */ (function (_super) {
             var rotationAmt = _this._rotation - prevRotation;
             ray.dir = ray.dir.rotate(rotationAmt, new ex.Point(0, 0));
         });
-        if (!this._isDashing) {
-            // add to dash cooldown
-            this.dashLevel = Math.min(this.dashLevel + delta, Config.MonsterDashCooldown);
-            if (this.dashLevel >= Config.MonsterDashCooldown) {
-                this._canDash = true;
-                this.add(this._shiftIndicator);
+        this.dx = 0;
+        this.dy = 0;
+        // Controller input
+        var pad = this._findFirstValidPad(engine);
+        if (pad) {
+            // sticks
+            var leftAxisY = pad.getAxes(ex.Input.Axes.LeftStickY);
+            var leftAxisX = pad.getAxes(ex.Input.Axes.LeftStickX);
+            var rightAxisX = pad.getAxes(ex.Input.Axes.RightStickX);
+            var rightAxisY = pad.getAxes(ex.Input.Axes.RightStickY);
+            var leftVector = new ex.Vector(leftAxisX, leftAxisY);
+            var rightVector = new ex.Vector(rightAxisX, rightAxisY);
+            if (pad.getButton(ex.Input.Buttons.RightTrigger) > .2 ||
+                pad.getButton(ex.Input.Buttons.Face1) > 0) {
+                this._attack();
+                this._isAttacking = true;
+                this._timeLeftAttacking = Config.MonsterAttackTime;
             }
-            // clear move
-            this.dx = 0;
-            this.dy = 0;
-            // Controller input
-            var pad = this._findFirstValidPad(engine);
-            if (pad) {
-                // sticks
-                var leftAxisY = pad.getAxes(ex.Input.Axes.LeftStickY);
-                var leftAxisX = pad.getAxes(ex.Input.Axes.LeftStickX);
-                var rightAxisX = pad.getAxes(ex.Input.Axes.RightStickX);
-                var rightAxisY = pad.getAxes(ex.Input.Axes.RightStickY);
-                var leftVector = new ex.Vector(leftAxisX, leftAxisY);
-                var rightVector = new ex.Vector(rightAxisX, rightAxisY);
-                if (pad.getButton(ex.Input.Buttons.RightTrigger) > .2 ||
-                    pad.getButton(ex.Input.Buttons.Face1) > 0) {
-                    this._attack();
-                    this._isAttacking = true;
-                    this._timeLeftAttacking = Config.MonsterAttackTime;
-                }
-                if (leftVector.distance() > .2) {
-                    this._rotation = ex.Util.canonicalizeAngle(leftVector.normalize().toAngle());
-                    if (!this._isAttacking) {
-                        var speed = leftVector.scale(Config.MonsterSpeed);
-                        this.dx = speed.x;
-                        this.dy = speed.y;
-                        if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx > 0) {
-                            if (this._direction !== "walkRight") {
-                                this.setDrawing("walkRight");
-                                this._direction = "walkRight";
-                            }
+            if (leftVector.distance() > .2) {
+                this._rotation = ex.Util.canonicalizeAngle(leftVector.normalize().toAngle());
+                if (!this._isAttacking) {
+                    var speed = leftVector.scale(Config.MonsterSpeed);
+                    this.dx = speed.x;
+                    this.dy = speed.y;
+                    if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx > 0) {
+                        if (this._direction !== "walkRight") {
+                            this.setDrawing("walkRight");
+                            this._direction = "walkRight";
                         }
-                        if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy < 0) {
-                            if (this._direction !== "walkUp") {
-                                this.setDrawing("walkUp");
-                                this._direction = "walkUp";
-                            }
+                    }
+                    if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy < 0) {
+                        if (this._direction !== "walkUp") {
+                            this.setDrawing("walkUp");
+                            this._direction = "walkUp";
                         }
-                        if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx < 0) {
-                            if (this._direction !== "walkLeft") {
-                                this.setDrawing("walkLeft");
-                                this._direction = "walkLeft";
-                            }
+                    }
+                    if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx < 0) {
+                        if (this._direction !== "walkLeft") {
+                            this.setDrawing("walkLeft");
+                            this._direction = "walkLeft";
                         }
-                        if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy > 0) {
-                            if (this._direction !== "walkDown") {
-                                this.setDrawing("walkDown");
-                                this._direction = "walkDown";
-                            }
+                    }
+                    if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy > 0) {
+                        if (this._direction !== "walkDown") {
+                            this.setDrawing("walkDown");
+                            this._direction = "walkDown";
                         }
                     }
                 }
             }
-            // WASD
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.W) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
-                if (!this._hasMoved) {
-                    Analytics.trackGameStart();
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dy = -Config.MonsterSpeed;
-                    this.setDrawing("walkUp");
+        }
+        // Gestion des touches ZQSD.
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.Z) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dy = -Config.MonsterSpeed;
+                this.setDrawing("walkUp");
+            }
+        }
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.S) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dy = Config.MonsterSpeed;
+                this.setDrawing("walkDown");
+            }
+        }
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.Q) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dx = -Config.MonsterSpeed;
+                if (this.dy === 0) {
+                    this.setDrawing("walkLeft");
                 }
             }
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.S) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
-                if (!this._hasMoved) {
-                    Analytics.trackGameStart();
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dy = Config.MonsterSpeed;
-                    this.setDrawing("walkDown");
+        }
+        if ((engine.input.keyboard.isHeld(ex.Input.Keys.D) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Right))) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dx = Config.MonsterSpeed;
+                if (this.dy === 0) {
+                    this.setDrawing("walkRight");
                 }
             }
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.A) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
-                if (!this._hasMoved) {
-                    Analytics.trackGameStart();
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dx = -Config.MonsterSpeed;
-                    if (this.dy === 0) {
-                        this.setDrawing("walkLeft");
-                    }
-                }
+        }
+        if (this.dx == 0 && this.dy == 0 && !this._isAttacking) {
+            this.setDrawing("idleDown");
+        }
+        if (this._isAttacking) {
+            if (this._rotation < Math.PI / 4 || this._rotation > Math.PI * (7 / 4)) {
+                this.setDrawing("attackRight");
             }
-            if ((engine.input.keyboard.isHeld(ex.Input.Keys.D) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Right))) {
-                if (!this._hasMoved) {
-                    Analytics.trackGameStart();
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dx = Config.MonsterSpeed;
-                    if (this.dy === 0) {
-                        this.setDrawing("walkRight");
-                    }
-                }
+            if (this._rotation > Math.PI / 4 && this._rotation < Math.PI * (3 / 4)) {
+                this.setDrawing("attackDown");
             }
-            if (this.dx == 0 && this.dy == 0 && !this._isAttacking) {
-                this.setDrawing("idleDown");
+            if (this._rotation > Math.PI * (3 / 4) && this._rotation < Math.PI * (5 / 4)) {
+                this.setDrawing("attackLeft");
             }
-            if (this._isAttacking) {
-                if (this._rotation < Math.PI / 4 || this._rotation > Math.PI * (7 / 4)) {
-                    this.setDrawing("attackRight");
-                }
-                if (this._rotation > Math.PI / 4 && this._rotation < Math.PI * (3 / 4)) {
-                    this.setDrawing("attackDown");
-                }
-                if (this._rotation > Math.PI * (3 / 4) && this._rotation < Math.PI * (5 / 4)) {
-                    this.setDrawing("attackLeft");
-                }
-                if (this._rotation > Math.PI * (5 / 4) && this._rotation < Math.PI * (7 / 4)) {
-                    this.setDrawing("attackUp");
-                }
-                this._direction = "attack";
-                this._timeLeftAttacking -= delta;
-                if (this._timeLeftAttacking <= 0) {
-                    this._isAttacking = false;
-                }
+            if (this._rotation > Math.PI * (5 / 4) && this._rotation < Math.PI * (7 / 4)) {
+                this.setDrawing("attackUp");
+            }
+            this._direction = "attack";
+            this._timeLeftAttacking -= delta;
+            if (this._timeLeftAttacking <= 0) {
+                this._isAttacking = false;
             }
         }
         this.setZIndex(this.y);
@@ -767,7 +556,6 @@ var Monster = /** @class */ (function (_super) {
         var _this = this;
         var hitHero = false;
         _.forIn(this._attackable, function (hero) {
-            // hero.blink(500, 500, 5); //can't because moving already (no parallel actions support)
             game.currentScene.camera.shake(5, 5, 200);
             hero.Health--;
             hitHero = true;
@@ -782,7 +570,6 @@ var Monster = /** @class */ (function (_super) {
     };
     Monster.prototype.debugDraw = function (ctx) {
         _super.prototype.debugDraw.call(this, ctx);
-        // Debugging draw for attack rays
         _.forIn(this._rays, function (ray) {
             ctx.beginPath();
             ctx.moveTo(ray.pos.x, ray.pos.y);
@@ -818,11 +605,9 @@ var HeroSpawner = /** @class */ (function () {
     }
     HeroSpawner.spawnHero = function () {
         var i, spawnPoints, spawnPoint, hero;
-        // todo better spawning logic
         for (i = 0; i < Math.min(Config.HeroSpawnPoolMax, HeroSpawner._spawned); i++) {
             spawnPoints = map.getSpawnPoints();
             spawnPoint = Util.pickRandom(spawnPoints);
-            // increasing difficulty
             if (Stats.numHeroesKilled > Config.HardThreshold) {
                 heroTimer.interval = Config.HeroSpawnIntervalHard;
             }
@@ -835,7 +620,6 @@ var HeroSpawner = /** @class */ (function () {
             HeroSpawner._spawn(spawnPoint);
             HeroSpawner._spawned++;
         }
-        // rig first spawn
         if (HeroSpawner._spawned === 0) {
             spawnPoint = map.getSpawnPoints()[0];
             HeroSpawner._spawn(spawnPoint);
@@ -875,14 +659,12 @@ var Hero = /** @class */ (function (_super) {
     function Hero(x, y) {
         var _this = _super.call(this, x, y, 24, 24) || this;
         _this.Health = Config.HeroHealth;
-        _this._treasure = 0;
         _this._attackCooldown = Config.HeroAttackCooldown;
         _this._hasHitMinotaur = true;
         _this._isAttacking = false;
         _this._timeLeftAttacking = 0;
         _this._stunnedTime = 0;
         _this._fsm = new TypeState.FiniteStateMachine(HeroStates.Searching);
-        // declare valid state transitions
         _this._fsm.from(HeroStates.Searching).to(HeroStates.Attacking, HeroStates.Looting);
         _this._fsm.from(HeroStates.Attacking).to(HeroStates.Searching);
         _this._fsm.from(HeroStates.Looting).to(HeroStates.Fleeing);
@@ -890,8 +672,6 @@ var Hero = /** @class */ (function (_super) {
         _this._fsm.from(HeroStates.Stunned).toAny(HeroStates);
         _this._fsm.on(HeroStates.Stunned, _this.onStunned.bind(_this));
         _this._fsm.onExit(HeroStates.Stunned, _this.onExitStunned.bind(_this));
-        _this._fsm.on(HeroStates.Searching, _this.onSearching.bind(_this));
-        _this._fsm.on(HeroStates.Looting, _this.onLooting.bind(_this));
         _this._fsm.on(HeroStates.Fleeing, _this.onFleeing.bind(_this));
         _this._fsm.on(HeroStates.Attacking, _this.onAttacking.bind(_this));
         return _this;
@@ -932,29 +712,10 @@ var Hero = /** @class */ (function (_super) {
         this.addDrawing("attackRight", attackRightAnim);
         this.collisionType = ex.CollisionType.Passive;
         this.on('collision', function (e) {
-            if (e.other instanceof Treasure) {
-                var hero = e.actor;
-                if (hero._treasure === 0) {
-                    hero._treasure = e.other.steal();
-                    if (hero._treasure === 0) {
-                        hero._fsm.go(HeroStates.Searching);
-                    }
-                    else if (hero._fsm.canGo(HeroStates.Looting)) {
-                        hero._fsm.go(HeroStates.Looting);
-                        // var logger = ex.Logger.getInstance(); 
-                        // logger.info('gold stolen: ' + hero._treasure);
-                        // logger.info('current hoard: ' + map.getHoardAmount());
-                    }
-                }
-            }
-            else if (e.other instanceof Monster) {
+            if (e.other instanceof Monster) {
                 var hero = e.actor;
                 if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
-                    Resources.HeroSwing.play();
                     var monster = e.other;
-                    if (!monster.isDashing()) {
-                        monster.health--;
-                    }
                     map.damageEffect();
                     Stats.damageTaken++;
                     hero._attackCooldown = Config.HeroAttackCooldown;
@@ -978,16 +739,11 @@ var Hero = /** @class */ (function (_super) {
                 }
             }
         });
-        this.onSearching();
     };
     Hero.prototype.update = function (engine, delta) {
         _super.prototype.update.call(this, engine, delta);
         if (this.Health <= 0) {
             Stats.numHeroesKilled++;
-            // map.getTreasures()[0].return(this._treasure);
-            this._chestLooted.return(this._treasure);
-            // return the treasure stolen to a random chest to preven player camping
-            // Util.pickRandom(map.getTreasures()).return(this._treasure);
             HeroSpawner.despawn(this);
         }
         this.setZIndex(this.y);
@@ -1029,26 +785,16 @@ var Hero = /** @class */ (function (_super) {
         switch (this._fsm.currentState) {
             case HeroStates.Stunned:
                 this._stunnedTime -= delta;
-                if (this._stunnedTime <= 0) {
-                    if (this._treasure > 0) {
-                        this._fsm.go(HeroStates.Fleeing);
-                    }
-                    else {
-                        this._fsm.go(HeroStates.Searching);
-                    }
-                }
                 break;
             case HeroStates.Searching:
                 if (heroVector.distance(monsterVector) <= Config.HeroAggroDistance) {
                     this._fsm.go(HeroStates.Attacking);
-                    // console.log('switching to attack');
                 }
                 break;
             case HeroStates.Attacking:
                 if (heroVector.distance(monsterVector) > Config.HeroAggroDistance) {
                     this.clearActions();
                     this._fsm.go(HeroStates.Searching);
-                    // console.log('stopping attack');
                 }
                 else if (heroVector.distance(monsterVector) <= Config.HeroAggroDistance) {
                     this.clearActions();
@@ -1059,15 +805,6 @@ var Hero = /** @class */ (function (_super) {
                 }
                 break;
         }
-        if (this._treasure > 0) {
-            this.add(this._lootIndicator);
-        }
-        else {
-            this.remove(this._lootIndicator);
-        }
-    };
-    Hero.prototype.getLootAmount = function () {
-        return this._treasure;
     };
     Hero.prototype.getLines = function () {
         var lines = new Array();
@@ -1108,34 +845,14 @@ var Hero = /** @class */ (function (_super) {
         this.dx = dir.x;
         this.dy = dir.y;
     };
-    Hero.prototype.onSearching = function (from) {
-        if (from != null && from === HeroStates.Searching) {
-            return;
-        }
-        // find treasures
-        var treasures = map.getTreasures();
-        // random treasure for now
-        var loot = Util.pickRandom(treasures);
-        // move to it
-        this.moveTo(loot.x, loot.y, Config.HeroSpeed);
-        this._chestLooted = loot;
-    };
-    Hero.prototype.onLooting = function (from) {
-        var _this = this;
-        // play animation
-        this.delay(2000).callMethod(function () { return _this._fsm.go(HeroStates.Fleeing); });
-    };
     Hero.prototype.onFleeing = function (from) {
         var _this = this;
-        // find an exit
         var exits = map.getSpawnPoints();
         var exit = Util.pickRandom(exits);
         this.moveTo(exit.x, exit.y, Config.HeroFleeingSpeed).callMethod(function () { return _this.onExit(); });
     };
     Hero.prototype.onAttacking = function (from) {
-        // stop any actions
         this.clearActions();
-        // TODO attack monster
         this.meet(map._player, Config.HeroSpeed);
     };
     Hero.prototype.onStunned = function (from) {
@@ -1152,71 +869,10 @@ var Hero = /** @class */ (function (_super) {
         return true;
     };
     Hero.prototype.onExit = function () {
-        // play negative sound or something
-        Stats.goldLost += this._treasure;
         Stats.numHeroesEscaped++;
         HeroSpawner.despawn(this);
     };
     return Hero;
-}(ex.Actor));
-var Treasure = /** @class */ (function (_super) {
-    __extends(Treasure, _super);
-    function Treasure(x, y) {
-        var _this = _super.call(this, x, y, 24, 24) || this;
-        _this._hoard = Config.TreasureHoardSize;
-        _this.anchor.setTo(0, 0);
-        return _this;
-    }
-    Treasure.prototype.onInitialize = function (engine) {
-        this.addDrawing("notempty", Resources.TextureTreasure.asSprite());
-        this.addDrawing("empty", Resources.TextureTreasureEmpty.asSprite());
-        this.collisionType = ex.CollisionType.Passive;
-    };
-    Treasure.prototype.getAmount = function () {
-        return this._hoard;
-    };
-    Treasure.prototype.steal = function () {
-        var amount = 0;
-        if (this._hoard > 0) {
-            if (this._hoard >= Config.TreasureStealAmount) {
-                amount = Config.TreasureStealAmount;
-            }
-            else {
-                amount = this._hoard;
-            }
-            this._hoard -= amount;
-            return amount;
-        }
-        else {
-            var that = this;
-            //TODO steal from another non-empty chest
-            _.first(map.getTreasures(), function (treasure) {
-                if (treasure != that && treasure.getAmount() > 0) {
-                    amount = treasure.steal();
-                    // console.log('stealing from another chest');
-                    return true;
-                }
-                return false;
-            });
-            return amount;
-        }
-    };
-    Treasure.prototype.return = function (amount) {
-        this._hoard += amount;
-    };
-    Treasure.prototype.reset = function () {
-        this._hoard = Config.TreasureHoardSize;
-    };
-    Treasure.prototype.update = function (engine, delta) {
-        _super.prototype.update.call(this, engine, delta);
-        if (this._hoard <= 0) {
-            this.setDrawing("empty");
-        }
-        else {
-            this.setDrawing("notempty");
-        }
-    };
-    return Treasure;
 }(ex.Actor));
 var Stats = /** @class */ (function () {
     function Stats() {
@@ -1322,15 +978,11 @@ var GameOver = /** @class */ (function (_super) {
             Stats.goldLost = 0;
             Stats.damageTaken = 0;
             map.resetPlayer();
-            _.forEach(map.getTreasures(), function (treasure) {
-                treasure.reset();
-            });
             HeroSpawner.reset();
             for (var i = HeroSpawner.getHeroes().length - 1; i >= 0; i--) {
                 HeroSpawner.despawn(HeroSpawner.getHeroes()[i]);
             }
             HeroSpawner.cleanupTombstones();
-            Analytics.trackGameRestart();
             game.goToScene('map');
         });
     };
@@ -1347,7 +999,6 @@ var GameOver = /** @class */ (function (_super) {
         _super.prototype.update.call(this, engine, delta);
         this._labelHeroesKilled.text = Stats.numHeroesKilled.toString() + ' (' + Math.floor(100 * (Stats.numHeroesKilled / HeroSpawner.getSpawnCount())).toString() + '%)';
         this._labelHeroesEscaped.text = Stats.numHeroesEscaped.toString() + ' (' + Math.floor(100 * (Stats.numHeroesEscaped / HeroSpawner.getSpawnCount())).toString() + '%)';
-        this._labelGoldLost.text = Math.floor(100 * (Stats.goldLost / map.getHoardAmount())).toString() + '%';
         this._labelDamageTaken.text = Math.floor(100 * (Stats.damageTaken / Config.MonsterHealth)).toString() + '%';
         var survival = map.getSurvivalTime(); // in ms
         var mins = Math.floor(survival / 1000 / 60);
@@ -1357,7 +1008,6 @@ var GameOver = /** @class */ (function (_super) {
     GameOver.prototype.setType = function (type) {
         this._type.setDrawing(type === GameOverType.Hoard ? "hoard" : "slain");
         Stats.gameOverType = type;
-        Analytics.trackGameOver();
     };
     return GameOver;
 }(ex.Scene));
@@ -1365,14 +1015,12 @@ var SoundManager = /** @class */ (function () {
     function SoundManager() {
     }
     SoundManager.start = function () {
-        // set all sound effect volumes
         if (Options.sound) {
             SoundManager.setSoundEffectLevels(1);
         }
         else {
             SoundManager.setSoundEffectLevels(0);
         }
-        // set music volume
         if (Options.music) {
             Resources.SoundMusic.setVolume(0.03);
             if (!Resources.SoundMusic.isPlaying()) {
@@ -1391,16 +1039,9 @@ var SoundManager = /** @class */ (function () {
             if (resource instanceof ex.Sound && (resource != Resources.SoundMusic) && (resource != Resources.GameOver)) {
                 resource.setVolume(volume);
             }
-            if (volume > 0) {
-                Resources.Fireball.setVolume(0.5);
-            }
-            else {
-                Resources.Fireball.setVolume(0);
-            }
         });
     };
     SoundManager.stop = function () {
-        // make sure volume is set for sounds
         _.forIn(Resources, function (resource) {
             if (resource instanceof ex.Sound) {
                 resource.setVolume(0);
@@ -1413,13 +1054,11 @@ var SoundManager = /** @class */ (function () {
     return SoundManager;
 }());
 /// <reference path="config.ts" />
-/// <reference path="analytics.ts" />
 /// <reference path="resources.ts" />
 /// <reference path="util.ts" />
 /// <reference path="map.ts" />
 /// <reference path="monster.ts" />
 /// <reference path="hero.ts" />
-/// <reference path="treasure.ts" />
 /// <reference path="stats.ts" />
 /// <reference path="options.ts" />
 /// <reference path="gameover.ts" />
