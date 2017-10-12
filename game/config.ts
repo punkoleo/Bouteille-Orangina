@@ -47,14 +47,15 @@ var Config = {
    // Hero with loot speed (in px/s)
    HeroFleeingSpeed: 80,
    // The cooldown amount for a hero's attack
-   HeroAttackCooldown: 1500,
+   HeroAttackCooldown: 5000,
    // The maximum distance a hero will aggro to the monster
    HeroAggroDistance: 150,
 
    HeroMeleeRange: 30,
    
    HeroStunnedTime: 100,
-   
+
+
    // Amount of gold heroes can carry
    TreasureStealAmount: 1,   
    // Amount of gold in each treasure stash

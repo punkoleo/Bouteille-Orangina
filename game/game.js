@@ -11,19 +11,20 @@ var __extends = (this && this.__extends) || (function () {
 var Config = {
     PlayerCellSpawnX: 10,
     PlayerCellSpawnY: 19,
-    MonsterHealth: 30,
+
+    MonsterHealth: 6,
     MonsterWidth: 48,
     MonsterHeight: 48,
     MonsterSpeed: 200,
     MonsterWalkFrameSpeed: 100,
-    MonsterAttackRange: 90,
-    MonsterDashSpeed: 700,
-    MonsterDashDuration: 700,
-    MonsterDashCooldown: 10000,
-    CloseMonsterAttackRange: 50,
+    MonsterAttackRange: 10,
+    MonsterDashSpeed: 1,
+    MonsterDashDuration: 1,
+    MonsterDashCooldown: 100000000,
+    CloseMonsterAttackRange: 10,
     MonsterProgressSize: 200,
     MonsterSpecialProgressSize: 125,
-    MonsterAttackTime: 300,
+    MonsterAttackTime: 500,
     MonsterAttackCooldown: 500,
     KnockBackForce: 200,
     RedVignetteDuration: 500,
@@ -52,15 +53,15 @@ var Config = {
     // The cooldown amount for a hero's attack
     HeroAttackCooldown: 1500,
     // The maximum distance a hero will aggro to the monster
-    HeroAggroDistance: 150,
+    HeroAggroDistance: 1500,
     HeroMeleeRange: 30,
     HeroStunnedTime: 100,
     // Amount of gold heroes can carry
-    TreasureStealAmount: 1,
+    TreasureStealAmount: 0,
     // Amount of gold in each treasure stash
-    TreasureHoardSize: 5,
+    TreasureHoardSize: 50,
     // Treasure progress indicator width (in px)
-    TreasureProgressSize: 600
+    TreasureProgressSize:1
 };
 var Analytics = /** @class */ (function () {
     function Analytics() {
@@ -91,7 +92,7 @@ var Analytics = /** @class */ (function () {
     Analytics._trackTiming = function (name, value) {
         try {
             var ga = window.ga;
-            ga && ga('send', 'timing', 'Ludum 33 Stats', name, value);
+            ga && ga('send', 'timing', 'Bomberman Orangina Ynov', name, value);
         }
         catch (ex) {
             ex.Logger.getInstance().error("Error while sending Google analytics timing", ex);
@@ -140,20 +141,30 @@ var Analytics = /** @class */ (function () {
 var Resources = {
     HeroSwing: new ex.Sound('sounds/hero-swing.mp3', 'sounds/hero-swing.wav'),
     Fireball: new ex.Sound('sounds/fireball.mp3', 'sounds/fireball.wav'),
-    SoundMusic: new ex.Sound('sounds/music.mp3', 'sounds/music.wav'),
-    GameOver: new ex.Sound('sounds/fail.mp3', 'sounds/fail.wav'),
+    SoundMusic: new ex.Sound('sounds/music.mp3', 'sounds/music.mp3'),
+    GameOver: new ex.Sound('sounds/MarioLoose.mp3', 'sounds/MarioLoose.mp3'),
     TextureShift: new ex.Texture("images/shift.png"),
     TextureVignette: new ex.Texture("images/vignette.png"),
-    TextureHero: new ex.Texture("images/hero.png"),
-    TextureHeroLootIndicator: new ex.Texture("images/loot-indicator.png"),
+    //TextureHero: new ex.Texture("images/hero.png"),
+    TextureHero: new ex.Texture("images/bomb.png"),
+//    TextureHeroLootIndicator: new ex.Texture("images/loot-indicator.png"),
+    TextureMonsterDown: new ex.Texture("images/minotaurv3.png"),
+    TextureMonsterRight: new ex.Texture("images/minotaurv3.png"),
+    TextureMonsterUp: new ex.Texture("images/minotaurv3.png"),
+    TextureMonsterAim: new ex.Texture("images/aiming.png"),
+    TextureMonsterCharge: new ex.Texture("images/fireball.png"),
+
+
+    /*
     TextureMonsterDown: new ex.Texture("images/minotaurv2.png"),
     TextureMonsterRight: new ex.Texture("images/minotaurv2right.png"),
     TextureMonsterUp: new ex.Texture("images/minotaurv2back.png"),
     TextureMonsterAim: new ex.Texture("images/aiming.png"),
     TextureMonsterCharge: new ex.Texture("images/fireball.png"),
+    */
     TextureTreasure: new ex.Texture("images/treasure.png"),
     TextureTreasureEmpty: new ex.Texture("images/treasure-empty.png"),
-    TextureTreasureIndicator: new ex.Texture("images/treasure-indicator.png"),
+    //TextureTreasureIndicator: new ex.Texture("images/treasure-indicator.png"),
     TextureMonsterIndicator: new ex.Texture("images/mino-indicator.png"),
     TextureMap: new ex.Texture("images/map.png"),
     TextureWall: new ex.Texture("images/wall.png"),
@@ -244,9 +255,8 @@ var Map = /** @class */ (function (_super) {
         var monsterIndicator = new ex.UIActor(game.getWidth() - 74, 10, 64, 64);
         monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
         this.add(monsterIndicator);
-        //
-        // todo load from Tiled
-        //     
+
+
         var treasures = [
             this.getCellPos(19, 2),
             this.getCellPos(20, 2),
@@ -413,9 +423,9 @@ var Monster = /** @class */ (function (_super) {
         this._aimSprite = Resources.TextureMonsterAim.asSprite();
         this._aimSprite.scale.setTo(2, 2);
         this._aimSprite.anchor = new ex.Point(.5, .5);
-        this._aimSprite.opacity(.7);
-        this._aimSprite.colorize(ex.Color.Green);
-        this._aimSprite.colorize(ex.Color.Green);
+        this._aimSprite.opacity(0);
+        this._aimSprite.colorize(ex.Color.Black);
+        this._aimSprite.colorize(ex.Color.Black);
         var shiftButton = new ex.SpriteSheet(Resources.TextureShift, 3, 1, 48, 48);
         var shiftAnimation = shiftButton.getAnimationForAll(engine, 100);
         shiftAnimation.loop = true;
@@ -797,6 +807,7 @@ var Monster = /** @class */ (function (_super) {
 var HeroStates;
 (function (HeroStates) {
     HeroStates[HeroStates["Searching"] = 0] = "Searching";
+    // Removing the looting state
     HeroStates[HeroStates["Looting"] = 1] = "Looting";
     HeroStates[HeroStates["Attacking"] = 2] = "Attacking";
     HeroStates[HeroStates["Fleeing"] = 3] = "Fleeing";

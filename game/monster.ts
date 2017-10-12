@@ -53,7 +53,10 @@ class Monster extends ex.Actor {
       this._aimSprite.colorize(ex.Color.Green);
       this._aimSprite.colorize(ex.Color.Green);
       
-      
+    /*  Removing the sprint action and animation
+    *
+    *
+    *
       var shiftButton = new ex.SpriteSheet(Resources.TextureShift, 3, 1, 48, 48);
       var shiftAnimation = shiftButton.getAnimationForAll(engine, 100);
       shiftAnimation.loop = true;
@@ -66,7 +69,7 @@ class Monster extends ex.Actor {
       chargeAnim.loop = true;
       chargeAnim.scale.setTo(2, 2);
       this.addDrawing("charge", chargeAnim);      
-      
+   */
       var downSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterDown, 14, 1, 96, 96);
       var rightSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterRight, 14, 1, 96, 96);
       var upSpriteSheet = new ex.SpriteSheet(Resources.TextureMonsterUp, 14, 1, 96, 96);
