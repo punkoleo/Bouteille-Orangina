@@ -106,7 +106,6 @@ var Map = /** @class */ (function (_super) {
         this._map.anchor.setTo(0, 0);
         this._map.addDrawing(Resources.TextureMap);
         this.add(this._map);
-        // vignette
         this._vg = new ex.UIActor(0, 0, game.getWidth(), game.getHeight());
         var blackVignette = Resources.TextureVignette.asSprite().clone();
         var redVignette = Resources.TextureVignette.asSprite().clone();
@@ -122,22 +121,10 @@ var Map = /** @class */ (function (_super) {
         this._lootProgress.anchor.setTo(0, 0);
         this._lootProgress.color = ex.Color.fromHex("#f25500");
         this.add(this._lootProgress);
-        var monsterProgressBack = new ex.UIActor(game.getWidth() - 66, 23, Config.MonsterProgressSize + 4, 40);
-        monsterProgressBack.anchor.setTo(1, 0);
-        monsterProgressBack.color = ex.Color.Black;
-        this.add(monsterProgressBack);
         this._monsterProgress = new ex.UIActor(game.getWidth() - 66, 27, Config.MonsterProgressSize, 32);
         this._monsterProgress.anchor.setTo(1, 0);
         this._monsterProgress.color = ex.Color.fromHex("#ab2800");
         this.add(this._monsterProgress);
-        var specialProgressBack = new ex.UIActor(game.getWidth() - 50, 46, Config.MonsterSpecialProgressSize + 4, 24);
-        specialProgressBack.anchor.setTo(1, 0);
-        specialProgressBack.color = ex.Color.Black;
-        this.add(specialProgressBack);
-        this._monsterSpecialProgress = new ex.UIActor(game.getWidth() - 50, 50, Config.MonsterSpecialProgressSize, 16);
-        this._monsterSpecialProgress.anchor.setTo(1, 0);
-        this._monsterSpecialProgress.color = ex.Color.fromHex("#6b1191");
-        this.add(this._monsterSpecialProgress);
         var monsterIndicator = new ex.UIActor(game.getWidth() - 74, 10, 64, 64);
         monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
         this.add(monsterIndicator);
@@ -207,7 +194,6 @@ var Map = /** @class */ (function (_super) {
                 this._vg.setDrawing("black");
             }
         }
-        // update monster health bar
         var monsterHealth = this._player.health;
         var progress = monsterHealth / Config.MonsterHealth;
         this._monsterProgress.setWidth(Math.floor(progress * Config.MonsterProgressSize));
@@ -248,14 +234,12 @@ var Monster = /** @class */ (function (_super) {
         _this._rays = new Array();
         _this._closeRays = new Array();
         _this._attackable = new Array();
-        //this.anchor = new ex.Point(0.35, 0.35);
         _this.collisionType = ex.CollisionType.Active;
         return _this;
     }
     Monster.prototype.onInitialize = function (engine) {
         var _this = this;
         var that = this;
-        // set the rotation of the actor when the mouse moves
         engine.input.pointers.primary.on('move', function (ev) {
             _this._mouseX = ev.x;
             _this._mouseY = ev.y;
@@ -337,7 +321,7 @@ var Monster = /** @class */ (function (_super) {
             var ray = new ex.Ray(rayPoint, rayVector);
             that._rays.push(ray);
         });
-        var closeXValues = new Array(1, 0.71, 0, -0.71, -1); //(1, 0.86, 0.71, 0.5, 0, -0.5, -0.71, -0.86, -1)
+        var closeXValues = new Array(1, 0.71, 0, -0.71, -1);
         var closeYValues = new Array(0, 0.71, 1, -0.71, 0);
         _.forIn(closeYValues, function (closeYValue) {
             _.forIn(closeXValues, function (closeXValue) {
@@ -389,7 +373,6 @@ var Monster = /** @class */ (function (_super) {
         this._detectAttackable();
         var prevRotation = this._rotation;
         this._rotation = ex.Util.canonicalizeAngle(new ex.Vector(this._mouseX - this.x, this._mouseY - this.y).toAngle());
-        // updating attack rays
         _.forIn(this._rays, function (ray) {
             ray.pos = new ex.Point(_this.x, _this.y);
             var rotationAmt = _this._rotation - prevRotation;
@@ -402,10 +385,8 @@ var Monster = /** @class */ (function (_super) {
         });
         this.dx = 0;
         this.dy = 0;
-        // Controller input
         var pad = this._findFirstValidPad(engine);
         if (pad) {
-            // sticks
             var leftAxisY = pad.getAxes(ex.Input.Axes.LeftStickY);
             var leftAxisX = pad.getAxes(ex.Input.Axes.LeftStickX);
             var rightAxisX = pad.getAxes(ex.Input.Axes.RightStickX);
@@ -1000,7 +981,7 @@ var GameOver = /** @class */ (function (_super) {
         this._labelHeroesKilled.text = Stats.numHeroesKilled.toString() + ' (' + Math.floor(100 * (Stats.numHeroesKilled / HeroSpawner.getSpawnCount())).toString() + '%)';
         this._labelHeroesEscaped.text = Stats.numHeroesEscaped.toString() + ' (' + Math.floor(100 * (Stats.numHeroesEscaped / HeroSpawner.getSpawnCount())).toString() + '%)';
         this._labelDamageTaken.text = Math.floor(100 * (Stats.damageTaken / Config.MonsterHealth)).toString() + '%';
-        var survival = map.getSurvivalTime(); // in ms
+        var survival = map.getSurvivalTime();
         var mins = Math.floor(survival / 1000 / 60);
         var secs = Math.floor((survival / 1000) - (60 * mins));
         this._labelSurvivalTime.text = mins.toString() + "m" + secs.toString() + "s";
