@@ -143,11 +143,10 @@ class Hero extends ex.Actor {
       this.on('collision', (e?: ex.CollisionEvent) => {
          if (e.other instanceof Monster) {
             var hero = <Hero>e.actor;
-            
             if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
                var monster = <Monster>e.other;
+               monster.health--;
                map.damageEffect();
-               
                Stats.damageTaken++;
                hero._attackCooldown = Config.HeroAttackCooldown;
                if(!hero._isAttacking){
@@ -164,7 +163,7 @@ class Hero extends ex.Actor {
                var dest = new ex.Vector(monster.x, monster.y);
                var a = dest.subtract(origin).toAngle(); 
             }  
-               
+
             if (!hero._hasHitMinotaur) {
                hero._hasHitMinotaur = true;
                hero._attackCooldown = Config.HeroAttackCooldown;

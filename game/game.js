@@ -686,6 +686,7 @@ var Hero = /** @class */ (function (_super) {
                 var hero = e.actor;
                 if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
                     var monster = e.other;
+                    monster.health--;
                     map.damageEffect();
                     Stats.damageTaken++;
                     hero._attackCooldown = Config.HeroAttackCooldown;
