@@ -79,7 +79,7 @@ class GameOver extends ex.Scene {
    }
    
    public onActivate(): void {
-      super.onActivate();    
+      super.onActivate(); 
       Resources.SoundMusic.stop();
       Resources.GameOver.play();
    }
@@ -95,7 +95,7 @@ class GameOver extends ex.Scene {
       this._labelHeroesKilled.text = Stats.numHeroesKilled.toString() + ' (' + Math.floor(100 * (Stats.numHeroesKilled / HeroSpawner.getSpawnCount())).toString() + '%)';
       this._labelHeroesEscaped.text = Stats.numHeroesEscaped.toString() + ' (' + Math.floor(100 * (Stats.numHeroesEscaped / HeroSpawner.getSpawnCount())).toString() + '%)';
       this._labelDamageTaken.text = Math.floor(100 * (Stats.damageTaken / Config.MonsterHealth)).toString() + '%';
-      var survival = map.getSurvivalTime(); // in ms
+      var survival = map.getSurvivalTime();
       var mins = Math.floor(survival / 1000 / 60);
       var secs = Math.floor((survival / 1000) - (60 * mins));
             

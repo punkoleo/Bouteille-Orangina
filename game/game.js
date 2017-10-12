@@ -17,9 +17,6 @@ var Config = {
     MonsterSpeed: 200,
     MonsterWalkFrameSpeed: 100,
     MonsterAttackRange: 90,
-    MonsterDashSpeed: 700,
-    MonsterDashDuration: 700,
-    MonsterDashCooldown: 10000,
     CloseMonsterAttackRange: 50,
     MonsterProgressSize: 200,
     MonsterSpecialProgressSize: 125,
@@ -205,7 +202,6 @@ var Map = /** @class */ (function (_super) {
         var monsterHealth = this._player.health;
         var progress = monsterHealth / Config.MonsterHealth;
         this._monsterProgress.setWidth(Math.floor(progress * Config.MonsterProgressSize));
-        this._monsterSpecialProgress.setWidth((this._player.dashLevel / Config.MonsterDashCooldown) * Config.MonsterSpecialProgressSize);
         var focus = game.currentScene.camera.getFocus().toVector();
         var position = new ex.Vector(this._player.x, this._player.y);
         var stretch = position.minus(focus).scale(Config.CameraElasticity);
@@ -237,10 +233,6 @@ var Monster = /** @class */ (function (_super) {
         _this._timeLeftAttacking = 0;
         _this._direction = "none";
         _this._lastSwing = 0;
-        _this._timeLeftDashing = 0;
-        _this._isDashing = false;
-        _this._canDash = false;
-        _this.dashLevel = 0;
         _this.color = ex.Color.Red;
         _this._mouseX = 0;
         _this._mouseY = 0;
@@ -356,12 +348,6 @@ var Monster = /** @class */ (function (_super) {
                 that._lastSwing = currentTime;
             }
         });
-        // keyboad
-        engine.input.keyboard.on("down", function (evt) {
-            if (evt.key === ex.Input.Keys.Shift) {
-                that.dash();
-            }
-        });
     };
     Monster.prototype._findFirstValidPad = function (engine) {
         var gamePad;
@@ -370,23 +356,6 @@ var Monster = /** @class */ (function (_super) {
             if (gamePad && gamePad._buttons && gamePad._buttons.length > 0) {
                 return gamePad;
             }
-        }
-    };
-    Monster.prototype.isDashing = function () {
-        return this._isDashing;
-    };
-    Monster.prototype.dash = function () {
-        if (this._canDash) {
-            this.remove(this._shiftIndicator);
-            this._canDash = false;
-            this.dashLevel = 0;
-            var dashVector = ex.Vector.fromAngle(this._rotation).scale(Config.MonsterDashSpeed);
-            this._isDashing = true;
-            this._timeLeftDashing = Config.MonsterDashDuration;
-            this.dx = dashVector.x;
-            this.dy = dashVector.y;
-            this.setDrawing("charge");
-            this.rotation = this._rotation;
         }
     };
     Monster.prototype.update = function (engine, delta) {
@@ -409,14 +378,6 @@ var Monster = /** @class */ (function (_super) {
         }
         this._attackable.length = 0;
         this._detectAttackable();
-        if (this._isDashing) {
-            this._attack();
-            this._timeLeftDashing -= delta;
-            if (this._timeLeftDashing <= 0) {
-                this._isDashing = false;
-                this.rotation = 0;
-            }
-        }
         var prevRotation = this._rotation;
         this._rotation = ex.Util.canonicalizeAngle(new ex.Vector(this._mouseX - this.x, this._mouseY - this.y).toAngle());
         // updating attack rays
@@ -430,131 +391,122 @@ var Monster = /** @class */ (function (_super) {
             var rotationAmt = _this._rotation - prevRotation;
             ray.dir = ray.dir.rotate(rotationAmt, new ex.Point(0, 0));
         });
-        if (!this._isDashing) {
-            // add to dash cooldown
-            this.dashLevel = Math.min(this.dashLevel + delta, Config.MonsterDashCooldown);
-            if (this.dashLevel >= Config.MonsterDashCooldown) {
-                this._canDash = true;
-                this.add(this._shiftIndicator);
+        this.dx = 0;
+        this.dy = 0;
+        // Controller input
+        var pad = this._findFirstValidPad(engine);
+        if (pad) {
+            // sticks
+            var leftAxisY = pad.getAxes(ex.Input.Axes.LeftStickY);
+            var leftAxisX = pad.getAxes(ex.Input.Axes.LeftStickX);
+            var rightAxisX = pad.getAxes(ex.Input.Axes.RightStickX);
+            var rightAxisY = pad.getAxes(ex.Input.Axes.RightStickY);
+            var leftVector = new ex.Vector(leftAxisX, leftAxisY);
+            var rightVector = new ex.Vector(rightAxisX, rightAxisY);
+            if (pad.getButton(ex.Input.Buttons.RightTrigger) > .2 ||
+                pad.getButton(ex.Input.Buttons.Face1) > 0) {
+                this._attack();
+                this._isAttacking = true;
+                this._timeLeftAttacking = Config.MonsterAttackTime;
             }
-            // clear move
-            this.dx = 0;
-            this.dy = 0;
-            // Controller input
-            var pad = this._findFirstValidPad(engine);
-            if (pad) {
-                // sticks
-                var leftAxisY = pad.getAxes(ex.Input.Axes.LeftStickY);
-                var leftAxisX = pad.getAxes(ex.Input.Axes.LeftStickX);
-                var rightAxisX = pad.getAxes(ex.Input.Axes.RightStickX);
-                var rightAxisY = pad.getAxes(ex.Input.Axes.RightStickY);
-                var leftVector = new ex.Vector(leftAxisX, leftAxisY);
-                var rightVector = new ex.Vector(rightAxisX, rightAxisY);
-                if (pad.getButton(ex.Input.Buttons.RightTrigger) > .2 ||
-                    pad.getButton(ex.Input.Buttons.Face1) > 0) {
-                    this._attack();
-                    this._isAttacking = true;
-                    this._timeLeftAttacking = Config.MonsterAttackTime;
-                }
-                if (leftVector.distance() > .2) {
-                    this._rotation = ex.Util.canonicalizeAngle(leftVector.normalize().toAngle());
-                    if (!this._isAttacking) {
-                        var speed = leftVector.scale(Config.MonsterSpeed);
-                        this.dx = speed.x;
-                        this.dy = speed.y;
-                        if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx > 0) {
-                            if (this._direction !== "walkRight") {
-                                this.setDrawing("walkRight");
-                                this._direction = "walkRight";
-                            }
+            if (leftVector.distance() > .2) {
+                this._rotation = ex.Util.canonicalizeAngle(leftVector.normalize().toAngle());
+                if (!this._isAttacking) {
+                    var speed = leftVector.scale(Config.MonsterSpeed);
+                    this.dx = speed.x;
+                    this.dy = speed.y;
+                    if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx > 0) {
+                        if (this._direction !== "walkRight") {
+                            this.setDrawing("walkRight");
+                            this._direction = "walkRight";
                         }
-                        if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy < 0) {
-                            if (this._direction !== "walkUp") {
-                                this.setDrawing("walkUp");
-                                this._direction = "walkUp";
-                            }
+                    }
+                    if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy < 0) {
+                        if (this._direction !== "walkUp") {
+                            this.setDrawing("walkUp");
+                            this._direction = "walkUp";
                         }
-                        if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx < 0) {
-                            if (this._direction !== "walkLeft") {
-                                this.setDrawing("walkLeft");
-                                this._direction = "walkLeft";
-                            }
+                    }
+                    if (Math.abs(this.dx) > Math.abs(this.dy) && this.dx < 0) {
+                        if (this._direction !== "walkLeft") {
+                            this.setDrawing("walkLeft");
+                            this._direction = "walkLeft";
                         }
-                        if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy > 0) {
-                            if (this._direction !== "walkDown") {
-                                this.setDrawing("walkDown");
-                                this._direction = "walkDown";
-                            }
+                    }
+                    if (Math.abs(this.dy) > Math.abs(this.dx) && this.dy > 0) {
+                        if (this._direction !== "walkDown") {
+                            this.setDrawing("walkDown");
+                            this._direction = "walkDown";
                         }
                     }
                 }
             }
-            // Gestion des touches ZQSD.
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.Z) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
-                if (!this._hasMoved) {
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dy = -Config.MonsterSpeed;
-                    this.setDrawing("walkUp");
+        }
+        // Gestion des touches ZQSD.
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.Z) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dy = -Config.MonsterSpeed;
+                this.setDrawing("walkUp");
+            }
+        }
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.S) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dy = Config.MonsterSpeed;
+                this.setDrawing("walkDown");
+            }
+        }
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.Q) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dx = -Config.MonsterSpeed;
+                if (this.dy === 0) {
+                    this.setDrawing("walkLeft");
                 }
             }
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.S) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
-                if (!this._hasMoved) {
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dy = Config.MonsterSpeed;
-                    this.setDrawing("walkDown");
+        }
+        if ((engine.input.keyboard.isHeld(ex.Input.Keys.D) ||
+            engine.input.keyboard.isHeld(ex.Input.Keys.Right))) {
+            if (!this._hasMoved) {
+                this._hasMoved = true;
+            }
+            if (!this._isAttacking) {
+                this.dx = Config.MonsterSpeed;
+                if (this.dy === 0) {
+                    this.setDrawing("walkRight");
                 }
             }
-            if (engine.input.keyboard.isHeld(ex.Input.Keys.Q) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
-                if (!this._hasMoved) {
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dx = -Config.MonsterSpeed;
-                    if (this.dy === 0) {
-                        this.setDrawing("walkLeft");
-                    }
-                }
+        }
+        if (this.dx == 0 && this.dy == 0 && !this._isAttacking) {
+            this.setDrawing("idleDown");
+        }
+        if (this._isAttacking) {
+            if (this._rotation < Math.PI / 4 || this._rotation > Math.PI * (7 / 4)) {
+                this.setDrawing("attackRight");
             }
-            if ((engine.input.keyboard.isHeld(ex.Input.Keys.D) ||
-                engine.input.keyboard.isHeld(ex.Input.Keys.Right))) {
-                if (!this._hasMoved) {
-                    this._hasMoved = true;
-                }
-                if (!this._isAttacking) {
-                    this.dx = Config.MonsterSpeed;
-                    if (this.dy === 0) {
-                        this.setDrawing("walkRight");
-                    }
-                }
+            if (this._rotation > Math.PI / 4 && this._rotation < Math.PI * (3 / 4)) {
+                this.setDrawing("attackDown");
             }
-            if (this.dx == 0 && this.dy == 0 && !this._isAttacking) {
-                this.setDrawing("idleDown");
+            if (this._rotation > Math.PI * (3 / 4) && this._rotation < Math.PI * (5 / 4)) {
+                this.setDrawing("attackLeft");
             }
-            if (this._isAttacking) {
-                if (this._rotation < Math.PI / 4 || this._rotation > Math.PI * (7 / 4)) {
-                    this.setDrawing("attackRight");
-                }
-                if (this._rotation > Math.PI / 4 && this._rotation < Math.PI * (3 / 4)) {
-                    this.setDrawing("attackDown");
-                }
-                if (this._rotation > Math.PI * (3 / 4) && this._rotation < Math.PI * (5 / 4)) {
-                    this.setDrawing("attackLeft");
-                }
-                if (this._rotation > Math.PI * (5 / 4) && this._rotation < Math.PI * (7 / 4)) {
-                    this.setDrawing("attackUp");
-                }
-                this._direction = "attack";
-                this._timeLeftAttacking -= delta;
-                if (this._timeLeftAttacking <= 0) {
-                    this._isAttacking = false;
-                }
+            if (this._rotation > Math.PI * (5 / 4) && this._rotation < Math.PI * (7 / 4)) {
+                this.setDrawing("attackUp");
+            }
+            this._direction = "attack";
+            this._timeLeftAttacking -= delta;
+            if (this._timeLeftAttacking <= 0) {
+                this._isAttacking = false;
             }
         }
         this.setZIndex(this.y);
@@ -754,9 +706,6 @@ var Hero = /** @class */ (function (_super) {
                 var hero = e.actor;
                 if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
                     var monster = e.other;
-                    if (!monster.isDashing()) {
-                        monster.health--;
-                    }
                     map.damageEffect();
                     Stats.damageTaken++;
                     hero._attackCooldown = Config.HeroAttackCooldown;

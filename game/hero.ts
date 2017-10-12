@@ -146,9 +146,6 @@ class Hero extends ex.Actor {
             
             if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
                var monster = <Monster>e.other;
-               if (!monster.isDashing()) {
-                  monster.health--;
-               }
                map.damageEffect();
                
                Stats.damageTaken++;
@@ -166,9 +163,8 @@ class Hero extends ex.Actor {
                var origin = new ex.Vector(hero.x, hero.y);
                var dest = new ex.Vector(monster.x, monster.y);
                var a = dest.subtract(origin).toAngle(); 
-            } 
-            
-                      
+            }  
+               
             if (!hero._hasHitMinotaur) {
                hero._hasHitMinotaur = true;
                hero._attackCooldown = Config.HeroAttackCooldown;

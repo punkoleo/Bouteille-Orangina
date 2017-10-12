@@ -158,13 +158,11 @@ class Map extends ex.Scene {
             this._vg.setDrawing("black");
          }
       }
-      
-      // update monster health bar
+       
       var monsterHealth = this._player.health;
       var progress = monsterHealth / Config.MonsterHealth;
       
       this._monsterProgress.setWidth(Math.floor(progress * Config.MonsterProgressSize));
-      this._monsterSpecialProgress.setWidth((this._player.dashLevel/ Config.MonsterDashCooldown) * Config.MonsterSpecialProgressSize);
             
       var focus = game.currentScene.camera.getFocus().toVector();
       var position = new ex.Vector(this._player.x, this._player.y);

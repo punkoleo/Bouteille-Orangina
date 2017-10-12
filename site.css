@@ -1,8 +1,10 @@
 body {
-   background: #000;
-   color: white;   
-   text-align: center;
-   font-family: 'Arial', sans-serif;
-   font-size: 1.1em;
-   cursor: url('images/cursor.png'), default;
-}
+  background: #000;
+  color: white;
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+  font-size: 1.1em;
+  cursor: url("images/cursor.png"), default; } 
+
+/*# sourceMappingURL=data:application/json;charset=utf8;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbInNpdGUuY3NzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBO0VBQ0csaUJBQWdCO0VBQ2hCLGFBQVk7RUFDWixtQkFBa0I7RUFDbEIsaUNBQWdDO0VBQ2hDLGlCQUFnQjtFQUNoQiwwQ0FBeUMsRUFDM0MiLCJmaWxlIjoic2l0ZS5jc3MiLCJzb3VyY2VzQ29udGVudCI6WyJib2R5IHtcclxuICAgYmFja2dyb3VuZDogIzAwMDtcclxuICAgY29sb3I6IHdoaXRlOyAgIFxyXG4gICB0ZXh0LWFsaWduOiBjZW50ZXI7XHJcbiAgIGZvbnQtZmFtaWx5OiAnQXJpYWwnLCBzYW5zLXNlcmlmO1xyXG4gICBmb250LXNpemU6IDEuMWVtO1xyXG4gICBjdXJzb3I6IHVybCgnaW1hZ2VzL2N1cnNvci5wbmcnKSwgZGVmYXVsdDtcclxufSJdfQ== */
+  
