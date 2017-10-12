@@ -36,7 +36,13 @@ var Config = {
 
    HeroFleeingSpeed: 80, 
    HeroAttackCooldown: 1500, 
-   HeroAggroDistance: 150,
+   HeroAggroDistance: 1500,
    HeroMeleeRange: 30,
-   HeroStunnedTime: 100
+   HeroStunnedTime: 100,  
+   // Amount of gold heroes can carry
+   TreasureStealAmount: 1,   
+   // Amount of gold in each treasure stash
+   TreasureHoardSize: 5,
+   // Treasure progress indicator width (in px)
+   TreasureProgressSize: 600
 }

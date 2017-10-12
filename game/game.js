@@ -11,13 +11,15 @@ var __extends = (this && this.__extends) || (function () {
 var Config = {
     PlayerCellSpawnX: 10,
     PlayerCellSpawnY: 19,
-    MonsterHealth: 30,
+
+    MonsterHealth: 6,
     MonsterWidth: 48,
     MonsterHeight: 48,
     MonsterSpeed: 200,
     MonsterWalkFrameSpeed: 100,
-    MonsterAttackRange: 90,
-    CloseMonsterAttackRange: 50,
+
+    MonsterAttackRange: 100,
+    CloseMonsterAttackRange: 10,
     MonsterProgressSize: 200,
     MonsterAttackTime: 300,
     MonsterAttackCooldown: 500,
@@ -40,7 +42,7 @@ var Config = {
     HeroSpeed: 100,
     HeroFleeingSpeed: 80,
     HeroAttackCooldown: 1500,
-    HeroAggroDistance: 150,
+    HeroAggroDistance: 1500,
     HeroMeleeRange: 30,
     HeroStunnedTime: 100
 };
@@ -49,12 +51,18 @@ var Resources = {
     GameOver: new ex.Sound('sounds/fail.mp3', 'sounds/fail.wav'),
     TextureShift: new ex.Texture("images/shift.png"),
     TextureVignette: new ex.Texture("images/vignette.png"),
-    TextureHero: new ex.Texture("images/hero.png"),
-    TextureHeroLootIndicator: new ex.Texture("images/loot-indicator.png"),
-    TextureMonsterDown: new ex.Texture("images/minotaurv2.png"),
-    TextureMonsterRight: new ex.Texture("images/minotaurv2right.png"),
-    TextureMonsterUp: new ex.Texture("images/minotaurv2back.png"),
+    //TextureHero: new ex.Texture("images/hero.png"),
+    TextureHero: new ex.Texture("images/bomb.png"),
+//    TextureHeroLootIndicator: new ex.Texture("images/loot-indicator.png"),
+    TextureMonsterDown: new ex.Texture("images/minotaurv3.png"),
+    TextureMonsterRight: new ex.Texture("images/minotaurv3.png"),
+    TextureMonsterUp: new ex.Texture("images/minotaurv3.png"),
     TextureMonsterAim: new ex.Texture("images/aiming.png"),
+    TextureMonsterCharge: new ex.Texture("images/fireball.png"),
+
+    TextureMonsterCharge: new ex.Texture("images/fireball.png"),
+    TextureTreasure: new ex.Texture("images/treasure.png"),
+    TextureTreasureEmpty: new ex.Texture("images/treasure-empty.png"),
     TextureMonsterIndicator: new ex.Texture("images/mino-indicator.png"),
     TextureMap: new ex.Texture("images/map.png"),
     TextureWall: new ex.Texture("images/wall.png"),
@@ -119,6 +127,7 @@ var Map = /** @class */ (function (_super) {
         var monsterIndicator = new ex.UIActor(game.getWidth() - 74, 10, 64, 64);
         monsterIndicator.addDrawing(Resources.TextureMonsterIndicator);
         this.add(monsterIndicator);
+
         var playerSpawn = this.getCellPos(Config.PlayerCellSpawnX, Config.PlayerCellSpawnY);
         this._player = new Monster(playerSpawn.x, playerSpawn.y);
         this.add(this._player);
@@ -237,9 +246,9 @@ var Monster = /** @class */ (function (_super) {
         this._aimSprite = Resources.TextureMonsterAim.asSprite();
         this._aimSprite.scale.setTo(2, 2);
         this._aimSprite.anchor = new ex.Point(.5, .5);
-        this._aimSprite.opacity(.7);
-        this._aimSprite.colorize(ex.Color.Green);
-        this._aimSprite.colorize(ex.Color.Green);
+        this._aimSprite.opacity(0);
+        this._aimSprite.colorize(ex.Color.Black);
+        this._aimSprite.colorize(ex.Color.Black);
         var shiftButton = new ex.SpriteSheet(Resources.TextureShift, 3, 1, 48, 48);
         var shiftAnimation = shiftButton.getAnimationForAll(engine, 100);
         shiftAnimation.loop = true;
@@ -565,6 +574,7 @@ var Monster = /** @class */ (function (_super) {
 var HeroStates;
 (function (HeroStates) {
     HeroStates[HeroStates["Searching"] = 0] = "Searching";
+    // Removing the looting state
     HeroStates[HeroStates["Looting"] = 1] = "Looting";
     HeroStates[HeroStates["Attacking"] = 2] = "Attacking";
     HeroStates[HeroStates["Fleeing"] = 3] = "Fleeing";

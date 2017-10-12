@@ -75,6 +75,8 @@ class Hero extends ex.Actor {
    private _hasHitMinotaur: boolean = true; 
    private _isAttacking: boolean = false;
    private _timeLeftAttacking: number = 0;
+   // For multiple bomb bonuses
+   private _bombsLeft: number = 1;
    private _direction: string;
    private _stunnedTime: number= 0;
 
