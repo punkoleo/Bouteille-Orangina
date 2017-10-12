@@ -96,7 +96,7 @@ class Map extends ex.Scene {
          for (y = 0; y < Map.MapSize; y++) {
             cell = this._walls[x + y * Map.MapSize];
             
-            if (cell !== 0) { // wall tile
+            if (cell !== 0) {
                wall = new ex.Actor(x * Map.CellSize, y * Map.CellSize, Map.CellSize, Map.CellSize);
                wall.traits.length = 0;
                wall.traits.push(new ex.Traits.OffscreenCulling());

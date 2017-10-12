@@ -21,9 +21,8 @@ var Config = {
     MonsterAttackRange: 100,
     CloseMonsterAttackRange: 10,
     MonsterProgressSize: 200,
-    MonsterSpecialProgressSize: 125,
-    MonsterAttackTime: 500,
-    MonsterAttackCooldown: 300,
+    MonsterAttackTime: 300,
+    MonsterAttackCooldown: 500,
     KnockBackForce: 200,
     RedVignetteDuration: 500,
     MonsterDamageCameraShakeDuration: 300,
@@ -697,6 +696,7 @@ var Hero = /** @class */ (function (_super) {
                 var hero = e.actor;
                 if (hero._attackCooldown == 0 && hero._hasHitMinotaur) {
                     var monster = e.other;
+                    monster.health--;
                     map.damageEffect();
                     Stats.damageTaken++;
                     hero._attackCooldown = Config.HeroAttackCooldown;
