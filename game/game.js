@@ -1049,12 +1049,17 @@ var game = new ex.Engine({
     width: 960,
     height: 640
 });
+
+// Create a new TiledResource loadable
+var map = new Extensions.Tiled.TiledResource("./maps/map-test3.json");
+
 game.setAntialiasing(false);
 game.canvas.oncontextmenu = function (e) {
     e.preventDefault();
     return false;
 };
-var loader = new ex.Loader();
+var loader = new ex.Loader([map]);
+
 _.forIn(Resources, function (resource) {
     loader.addResource(resource);
 });
@@ -1070,14 +1075,20 @@ document.getElementById("toggle-music").addEventListener("click", function () {
     SoundManager.start();
 });
 game.input.gamepads.enabled = true;
-var map = new Map(game);
+
 var settings = new Settings(game);
 var gameOver = new GameOver(game);
 var isGameOver = false;
 var heroTimer;
 game.start(loader).then(function () {
+    map.data.tilesets.forEach(function(ts) {
+      console.log(ts.image, ts.imageTexture.isLoaded());
+    });
+    var tm = map.getTileMap();
+    game.add(tm);
+    
     game.backgroundColor = ex.Color.Black;
-    game.add('map', map);
+    //game.add('map', map);
     game.goToScene('map');
     game.add('settings', settings);
     game.add('gameover', gameOver);
